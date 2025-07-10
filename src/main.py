@@ -5,8 +5,12 @@ Autor: Marcel Tsubota
 Descrição: Otimização de seleção de melhorias em imóvel utilizando Algoritmos Genéticos.
 """
 
-import random
+import os
 import csv
+import random
+import numpy as np
+from datetime import datetime
+import matplotlib.pyplot as plt
 
 # ================================
 # PARÂMETROS DO ALGORITMO
@@ -15,7 +19,7 @@ TAMANHO_POPULACAO = 50
 NUM_GERACOES = 100
 TAXA_MUTACAO = 0.01
 TAXA_CROSSOVER = 0.8
-ORCAMENTO_TOTAL = 100000
+ORCAMENTO_TOTAL = 50000
 
 # ================================
 # CARREGAMENTO DO DATASET
@@ -98,9 +102,14 @@ def algoritmo_genetico(melhorias, orcamento):
     populacao = inicializar_populacao(TAMANHO_POPULACAO, num_melhorias)
     melhor_individuo = None
     melhor_fitness = 0
+    evolucao_fitness = []
 
     for geracao in range(NUM_GERACOES):
         fitnesses = [avaliar_fitness(i, melhorias, orcamento) for i in populacao]
+        
+        # Guarda o melhor fitness desta geração
+        geracao_melhor_fitness = max(fitnesses)
+        evolucao_fitness.append(geracao_melhor_fitness)
 
         # Armazena o melhor indivíduo
         for individuo, fit in zip(populacao, fitnesses):
@@ -120,7 +129,7 @@ def algoritmo_genetico(melhorias, orcamento):
         populacao = nova_populacao[:TAMANHO_POPULACAO]
         print(f"Geração {geracao+1}: Melhor fitness = {melhor_fitness}")
 
-    return melhor_individuo, melhor_fitness
+    return melhor_individuo, melhor_fitness, evolucao_fitness
 
 def exibir_solucao(individuo, melhorias):
     print("\nMelhor combinação de melhorias encontrada:")
@@ -135,12 +144,113 @@ def exibir_solucao(individuo, melhorias):
     print(f"Valorização total: {valorizacao_total}")
 
 # ================================
+# GRÁFICO DE EVOLUÇÃO DO FITNESS
+# ================================
+""" def plotar_evolucao_fitness(evolucao_fitness):
+    plt.figure(figsize=(12, 6))
+    plt.plot(
+        range(1, len(evolucao_fitness)+1),
+        evolucao_fitness,
+        marker='o',
+        linestyle='-',
+        linewidth=2,
+        markersize=6,
+        label='Melhor Fitness'
+    )
+    plt.title('Evolução do Melhor Fitness por Geração', fontsize=16, fontweight='bold')
+    plt.xlabel('Geração', fontsize=13)
+    plt.ylabel('Melhor Fitness', fontsize=13)
+    plt.xticks(fontsize=11)
+    plt.yticks(fontsize=11)
+    plt.grid(visible=True, linestyle='--', alpha=0.5)
+    plt.legend(fontsize=12)
+    plt.tight_layout()
+    plt.savefig('resultados/evolucao_fitness.png', dpi=150)
+    plt.show() """
+
+def plotar_evolucao_fitness(evolucao_fitness, nome_projeto='Tech Challenge Fase 2'):
+    # Garante que a pasta resultados existe
+    os.makedirs('resultados', exist_ok=True)
+    
+    # Gera nome de arquivo com timestamp
+    timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
+    nome_arquivo_base = f"resultados/evolucao_fitness_{timestamp}"
+    
+    plt.figure(figsize=(13, 7))
+    
+    # Escolha de cor personalizada (azul escuro, pode trocar)
+    cor_principal = "#005caa"
+    
+    # Linha principal e pontos
+    plt.plot(
+        range(1, len(evolucao_fitness)+1),
+        evolucao_fitness,
+        marker='o',
+        linestyle='-',
+        linewidth=2.5,
+        markersize=7,
+        label='Melhor Fitness',
+        color=cor_principal
+    )
+    
+    # Linha de tendência suavizada (média móvel)
+    if len(evolucao_fitness) > 5:
+        janela = 5
+        media_movel = np.convolve(evolucao_fitness, np.ones(janela)/janela, mode='valid')
+        plt.plot(range(janela, len(evolucao_fitness)+1), media_movel,
+                 label='Média Móvel (5 gerações)', linestyle='--', color='#f28500', linewidth=2)
+    
+    # Gráfico mais visual
+    plt.title(f'Evolução do Melhor Fitness por Geração\n{nome_projeto}', fontsize=17, fontweight='bold', color='#222')
+    plt.xlabel('Geração', fontsize=14, fontweight='bold')
+    plt.ylabel('Melhor Fitness', fontsize=14, fontweight='bold')
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
+    plt.grid(visible=True, linestyle=':', alpha=0.55)
+    plt.legend(fontsize=13, loc='best', frameon=True, shadow=True)
+    
+    # Caixa ao redor do gráfico
+    plt.gca().spines['top'].set_visible(False)
+    plt.gca().spines['right'].set_visible(False)
+    plt.gca().spines['left'].set_linewidth(1.2)
+    plt.gca().spines['bottom'].set_linewidth(1.2)
+    
+    # Marca d'água
+    plt.figtext(0.99, 0.01, 'Tech Challenge Fase 2 - FIAP', fontsize=11, color='#aaa',
+                ha='right', va='bottom', alpha=0.8)
+    
+    # Encontrar o índice do valor máximo e mínimo
+    idx_max = np.argmax(evolucao_fitness)
+    idx_min = np.argmin(evolucao_fitness)
+
+    # Anotar o valor máximo no gráfico
+    plt.annotate(f'Máx: {max(evolucao_fitness):.2f}',
+                xy=(idx_max + 1, evolucao_fitness[idx_max]),
+                xytext=(-60, -30), textcoords='offset points',
+                arrowprops=dict(arrowstyle='->', color='green'),
+                fontsize=12, color='green', fontweight='bold')
+
+    # Anotar o valor mínimo no gráfico
+    plt.annotate(f'Mín: {min(evolucao_fitness):.2f}',
+                xy=(idx_min + 1, evolucao_fitness[idx_min]),
+                xytext=(20, 10), textcoords='offset points',
+                arrowprops=dict(arrowstyle='->', color='red'),
+                fontsize=12, color='red', fontweight='bold')
+    
+    plt.tight_layout()
+    # Salva em PNG e PDF
+    plt.savefig(f"{nome_arquivo_base}.png", dpi=180)
+    plt.savefig(f"{nome_arquivo_base}.pdf")
+    plt.show()
+    
+# ================================
 # EXECUÇÃO PRINCIPAL
 # ================================
 def main():
     melhorias = carregar_melhorias('../melhorias.csv')
-    melhor_individuo, melhor_fitness = algoritmo_genetico(melhorias, ORCAMENTO_TOTAL)
-    exibir_solucao(melhor_individuo, melhorias)
+    melhor_individuo, melhor_fitness, evolucao_fitness = algoritmo_genetico(melhorias, ORCAMENTO_TOTAL)
+    exibir_solucao(melhor_individuo, melhorias)    
+    plotar_evolucao_fitness(evolucao_fitness)
 
 if __name__ == "__main__":
     main()
