@@ -1,7 +1,7 @@
 """
 main.py
 Tech Challenge Fase 2 - Algoritmos Genéticos
-Autor: [Seu Nome ou Grupo]
+Autor: Marcel Tsubota
 Descrição: Otimização de seleção de melhorias em imóvel utilizando Algoritmos Genéticos.
 """
 
@@ -15,7 +15,7 @@ TAMANHO_POPULACAO = 50
 NUM_GERACOES = 100
 TAXA_MUTACAO = 0.01
 TAXA_CROSSOVER = 0.8
-ORCAMENTO_TOTAL = 30000  # Exemplo de orçamento
+ORCAMENTO_TOTAL = 100000
 
 # ================================
 # CARREGAMENTO DO DATASET
@@ -31,11 +31,12 @@ def carregar_melhorias(nome_arquivo):
     melhorias = []
     with open(nome_arquivo, newline='', encoding='utf-8') as csvfile:
         reader = csv.DictReader(csvfile, delimiter=';')
+        reader.fieldnames = [campo.strip() for campo in reader.fieldnames]
         for row in reader:
             melhorias.append({
-                'nome': row['melhoria'],
-                'custo': float(row['custo']),
-                'valorizacao': float(row['valorizacao'])
+                'nome': row['nome'].strip(),
+                'custo': float(row['custo'].replace(',', '.')),
+                'valorizacao': float(row['valorizacao'].replace(',', '.'))
             })
     return melhorias
 
@@ -78,7 +79,9 @@ def crossover(pai1, pai2):
     """
     if random.random() < TAXA_CROSSOVER:
         ponto = random.randint(1, len(pai1)-1)
-        return pai1[:ponto] + pai2[ponto:]
+        filho1 = pai1[:ponto] + pai2[ponto:]
+        filho2 = pai2[:ponto] + pai1[ponto:]
+        return filho1, filho2
     return pai1[:], pai2[:]
 
 def mutacao(individuo):
