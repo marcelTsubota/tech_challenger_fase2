@@ -30,7 +30,7 @@ def carregar_melhorias(nome_arquivo):
     """
     melhorias = []
     with open(nome_arquivo, newline='', encoding='utf-8') as csvfile:
-        reader = csv.DictReader(csvfile)
+        reader = csv.DictReader(csvfile, delimiter=';')
         for row in reader:
             melhorias.append({
                 'nome': row['melhoria'],
